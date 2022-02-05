@@ -28,7 +28,30 @@ defmodule ShipsEngine.Ship do
     {:error, :invalid_ship_sintax}
   end
 
-  def new() do
-    %Ship{coordinates: MapSet.new, hit_coordinates: MapSet.new}
+  defp add_coordinates(offsets, upper_left) do
+    Enum.reduce_while(
+      offsets,
+      MapSet.new,
+      fn offset, acc ->
+        add_coordinate(acc, upper_left, offset)
+      end
+    )
   end
+
+  defp add_coordinate(coordinates, %Coordinate{row: row, col: col}, {row_offset, col_offset}) do
+    case Coordinate.new(row + row_offset, col + col_offset) do
+      {:ok, coordinate} -> {:cont, MapSet.put(coordinates, coordinate)}
+      {:error, :invalid_coordinate} -> {:halt, {:error, :invalid_coordinate}}
+    end
+  end
+
+  def new(type, %Coordinate{} = upper_left) do
+    # %Ship{coordinates: MapSet.new, hit_coordinates: MapSet.new}
+    with [_|_] = offsets <- offsets(type), %MapSet{} = coordinates <- add_coordinates(offsets, upper_left)  do
+      {:ok, %Ship{coordinates: coordinates, hit_coordinates: MapSet.new}}
+    else
+      error -> error
+    end
+  end
+
 end
